@@ -46,7 +46,7 @@ class NearestCallAgent(Agent):
     def update(self, s, a, r, s2, done):
         pass
     
-if __name__ == "_main":
+if __name__ == "__main__":
     agent = NearestCallAgent()
     assert agent.act((3, (1,0,0,0,1), -1)) == "up"
 
