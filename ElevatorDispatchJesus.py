@@ -169,16 +169,18 @@ class Elevator(Env):
     def step(self, action):
         if self.done: # Ends the episode 
             RuntimeError("Episode has finished! ---")
-        #Create refined reward system, the bandit one randomly rewards 1 and if it doesnt meet criteria it rewards 0.
-        reward = -1
+        # Penalty for all people waiting, penalty for holding onto a rider
+        waiting_penalty = sum(self.waiting)
+        riding_penalty = 1 if self.rider_dest != -1 else 0
+        reward = -(waiting_penalty + riding_penalty)
 
-        if action == 0 and self.current_floor > 0: # Move DOWN one floor
+        if action == "down" and self.current_floor > 0: # Move DOWN one floor
             self.current_floor -= 1  
 
-        elif action == 2 and self.current_floor < self.num_floors - 1: # Move UP one floor
+        elif action == "up" and self.current_floor < self.num_floors - 1: # Move UP one floor
             self.current_floor += 1
 
-        elif action == 1: # Drop off and convenient pick up.
+        elif action == "stay": # Drop off and convenient pick up.
 
             if self.rider_dest == -1 and self.waiting[self.current_floor] == 1: # Determines if no one is inside AND someone is waiting current floor
                 self.waiting[self.current_floor] = 0 # Sets person waiting to 0 because zero means no one is waiting (we are about to verify we picked them up)
@@ -209,12 +211,12 @@ class Elevator(Env):
         self.state = (self.current_floor, tuple(self.waiting), self.rider_dest)
         return self.state, reward, self.done
 
-    def actions(self, state):
+    def actions(self, state): #Updated to use String (I dont wanna mess with all the comments referencing numbers)
         # Actions: 0 = Down, 1 = Stay, 2 = Up
-        valid_actions = [1] # This auto applies 1 to the list, 1 is always valid because staying is always a valid possibility
+        valid_actions = ["stay"] # This auto applies 1 to the list, 1 is always valid because staying is always a valid possibility
         
-        if self.current_floor > 0: #Checks if Elevator can move DOWN
-            valid_actions.append(0)  # Can move down
-        if self.current_floor < self.num_floors - 1: #Checks if Elevator can move UP
-            valid_actions.append(2)
+        if self.current_floor > "down": #Checks if Elevator can move DOWN
+            valid_actions.append("down")  # Can move down
+        if self.current_floor < self.num_floors - "up": #Checks if Elevator can move UP
+            valid_actions.append("up")
         return valid_actions # INFORMS THE AGENT ALL VALID MOVEMENTS *******************
