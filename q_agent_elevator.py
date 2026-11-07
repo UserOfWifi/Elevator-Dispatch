@@ -1,16 +1,5 @@
-from abc import ABC, abstractmethod
+from RL_interfaces_v2 import Agent
 import random
-
-class Agent(ABC):
-    """A decision maker. It only ever sees states, actions, and rewards."""
-
-    @abstractmethod
-    def act(self, state):
-        """Return an action based on 'state'."""
-
-    @abstractmethod
-    def update(self, state, action, reward, next_state, done):
-        """Update the policy based on state."""
 
 
 class QAgent(Agent):
