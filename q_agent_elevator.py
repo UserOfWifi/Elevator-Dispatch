@@ -10,30 +10,6 @@ class QAgent(Agent):
         It never reads the environment's private fields, and it learns only
         through act() and update(), the two methods required by Agent.
 
-        State (tuple, received from the environment):
-            (current_floor, waiting, rider_dest)
-            - current_floor: int, 0 up to num_floors - 1
-            - waiting: tuple of 0/1 per floor
-            - rider_dest: int, -1 when the elevator is empty
-
-        Actions (str):
-            "up", "down", "open"
-            - No "up" on the top floor and no "down" on floor 0. The agent
-              works this out from the floor in the state, because it cannot
-              call env.actions().
-
-        Learning rule (Q-learning, off-policy):
-            Q(s, a) <- Q(s, a) + alpha * (r + gamma * max_a' Q(s', a') - Q(s, a))
-            - If the episode just ended (done), there is no next state, so the
-              bootstrap term max_a' Q(s', a') is treated as 0.
-
-        Exploration (epsilon-greedy):
-            - With probability epsilon, pick a random legal action.
-            - Otherwise pick the legal action with the highest Q-value,
-              breaking ties randomly with the seeded rng.
-            - epsilon is multiplied by epsilon_decay (never below min_epsilon)
-              inside update(), once each time an episode ends (done=True).
-
         Attributes:
         --------------
         actions (list)           - All possible action names; legality is filtered per state
@@ -41,7 +17,7 @@ class QAgent(Agent):
         rng (obj)                - Seeded random generator for exploration and tie-breaking,
                                    so results can be rerun exactly
         alpha (float)            - Learning rate; how far each update moves Q toward its target
-        gamma (float)            - Discount factor; how much future reward counts versus immediate reward
+        gamma (float)            - Discount factor - how much future reward counts versus immediate reward
         epsilon (float)          - Current chance of taking a random action. Starts high, decays over training
         epsilon_decay (float)    - Multiplier applied to epsilon at the end of each episode (e.g. 0.9998)
         min_epsilon (float)      - Floor for epsilon so the agent never stops exploring entirely
@@ -51,19 +27,8 @@ class QAgent(Agent):
 
     def __init__(self, seed=0, alpha=0.1, gamma=0.99, epsilon=1.0,
                  epsilon_decay=0.9998, min_epsilon=0.01, num_floors=5):
-        """
-        seed           - seeds the agent's own rng (exploration choices and tie-breaks)
-        alpha          - learning rate in (0, 1]; moderate because rewards are stochastic
-        gamma          - discount in [0, 1); closer to 1 means more far-sighted
-        epsilon        - starting exploration rate (1.0 = fully random at first)
-        epsilon_decay  - per-episode multiplier; choose it from your training length.
-                         0.9998 reaches min_epsilon after about 23,000 episodes,
-                         0.999 after about 4,600
-        min_epsilon    - lowest allowed exploration rate during training
-        num_floors     - must match the environment's number of floors
-        """
         self.actions = ["up", "down", "open"]
-        self.q_table = {}  # (state, action) where state is tuple & action is str
+        self.q_table = {}  # (state, action)
         self.rng = random.Random(seed)
 
         # Hyperparameters
@@ -115,7 +80,7 @@ class QAgent(Agent):
         if done:
             max_next_q = 0.0
         else:
-            # Legal actions in the next state, found the same way as in act()
+            # Legal actions in the next state
             next_floor = next_state[0]
             next_legal = list(self.actions)
             if next_floor == 0:
@@ -125,10 +90,9 @@ class QAgent(Agent):
             max_next_q = max(self.q_table.get((next_state, a), 0.0)
                              for a in next_legal)
 
-        # Q-learning calculation, then store back in the table
+        # Calculation
         target = reward + self.gamma * max_next_q
         self.q_table[(state, action)] = current_q + self.alpha * (target - current_q)
 
-        # Once per episode: shrink exploration, but never below the floor
         if done:
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
