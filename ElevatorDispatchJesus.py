@@ -57,6 +57,7 @@ class Elevator(Env):
         self.max_steps = max_steps  
         self.arrival_prob = arrival_prob 
         self.rng = random.Random(seed) 
+        self.dest_rng = random.Random(seed + 1) # separate rng for destinations, so that the arrival_prob rng is not affected by the destination rng
         
         self.num_floors = 5  # Floors 0 up to 4
         
@@ -76,7 +77,7 @@ class Elevator(Env):
     #helper that draws a destination for a person on `floor`
     # (any floor except their own).
     def _new_destination(self, floor):
-        return self.rng.choice([f for f in range(self.num_floors) if f != floor])
+        return self.dest_rng.choice([f for f in range(self.num_floors) if f != floor])
 
     # Initialize hidden destinations for any waiting passengers.
     # -1 means no passenger is waiting at that floor.
@@ -159,16 +160,11 @@ class Elevator(Env):
         if self.rng.random() < self.arrival_prob:
 
 
-            available_floors = [
-                f for f in range(self.num_floors) 
-                if self.waiting[f] == 0
-            ]
+            arrival_floor = self.rng.randrange(self.num_floors)
 
-            if available_floors:
-                arrival_floor = self.rng.randrange(self.num_floors)
-                if self.waiting[arrival_floor] == 0:
-                    self.waiting[arrival_floor] = 1
-                    self._waiting_dest[arrival_floor] = self._new_destination(arrival_floor)
+            if self.waiting[arrival_floor] == 0:
+                self.waiting[arrival_floor] = 1
+                self._waiting_dest[arrival_floor] = self._new_destination(arrival_floor)
                 
 
             
