@@ -70,12 +70,28 @@ class Elevator(Env):
         self.steps_left = self.max_steps
         self.done = False
         self.state = (self.current_floor, tuple(self.waiting), self.rider_dest) 
+        self._assign_start_destinations()
+
+    
+    #helper that draws a destination for a person on `floor`
+    # (any floor except their own).
+    def _new_destination(self, floor):
+        return self.rng.choice([f for f in range(self.num_floors) if f != floor])
+
+    # Initialize hidden destinations for any waiting passengers.
+    # -1 means no passenger is waiting at that floor.
+    def _assign_start_destinations(self):
+        self._waiting_dest = [-1] * self.num_floors
+        for f in range(self.num_floors):
+            if self.waiting[f] == 1:
+                self._waiting_dest[f] = self._new_destination(f)
 
     def reset(self):
         # Reassigns the starting values from the start 
         self.current_floor = self.initial_start[0]
         self.waiting = list(self.initial_start[1])
         self.rider_dest = self.initial_start[2]
+        self._assign_start_destinations()
         
         self.steps_left = self.max_steps
         self.done = False
@@ -89,17 +105,27 @@ class Elevator(Env):
 
         if self.done: 
             raise RuntimeError("Episode has finished! ---")
-        
+
+       
+       # this is jsut to check yhe legal actions for current state, 
+       # if the action is not legal it will raise a ValueError
+
+        legal = self.actions(self.state)
+        if action not in legal:
+            raise ValueError(
+                f"Invalid action {action!r} in state  {self.state}; legal actions: {legal}")
+
         # Penalty for all people waiting, penalty for holding onto a rider
+
 
         waiting_penalty = sum(self.waiting)
         riding_penalty = 1 if self.rider_dest != -1 else 0
         reward = -(waiting_penalty + riding_penalty)
 
-        if action == "down" and self.current_floor > 0: 
+        if action == "down": 
             self.current_floor -= 1  
 
-        elif action == "up" and self.current_floor < self.num_floors - 1: 
+        elif action == "up" : 
             self.current_floor += 1
 
         elif action == "open": 
@@ -113,10 +139,12 @@ class Elevator(Env):
  
             if self.rider_dest == -1 and self.waiting[self.current_floor] == 1:
                 self.waiting[self.current_floor] = 0
-                # The new rider wants a random floor other than this one.
-                possible_dests = [f for f in range(self.num_floors)
-                                  if f != self.current_floor]
-                self.rider_dest = self.rng.choice(possible_dests)
+                #Use the destination assigned when the passenger appeared,
+                # rather than choosing another destination at pickup.
+                self.rider_dest = self._waiting_dest[self.current_floor]
+
+                #Clear the stored destination because the passenger is now inside.
+                self._waiting_dest[self.current_floor] = -1
 
         # 2. Stochastic Passenger Generation (Optional background activity) | This is an AI generated comment but I want Ari to take a look at this and explain what is happening here
 
@@ -129,9 +157,19 @@ class Elevator(Env):
         # waiting on that floor, maintaining one waiting passenger per floor.
         
         if self.rng.random() < self.arrival_prob:
-            arrival_floor = self.rng.randrange(0, self.num_floors)
-            if self.waiting[arrival_floor] == 0:
-                self.waiting[arrival_floor] = 1
+
+
+            available_floors = [
+                f for f in range(self.num_floors) 
+                if self.waiting[f] == 0
+            ]
+
+            if available_floors:
+                arrival_floor = self.rng.randrange(self.num_floors)
+                if self.waiting[arrival_floor] == 0:
+                    self.waiting[arrival_floor] = 1
+                    self._waiting_dest[arrival_floor] = self._new_destination(arrival_floor)
+                
 
             
 
