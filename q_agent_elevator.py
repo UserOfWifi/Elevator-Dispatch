@@ -42,11 +42,6 @@ class QAgent(Agent):
         self.max_floor = num_floors - 1
 
     def act(self, state):
-        """
-        Choose an action for `state` using epsilon-greedy selection.
-        Explore (random legal action) with probability epsilon; otherwise
-        exploit (legal action with the highest Q, ties broken randomly).
-        """
         # Setting boundaries for legal elevator actions
         floor = state[0]
         legal_actions = list(self.actions)
@@ -68,13 +63,6 @@ class QAgent(Agent):
         return self.rng.choice(best_actions)
 
     def update(self, state, action, reward, next_state, done):
-        """
-        Apply one Q-learning update from the observed transition
-        (state, action, reward, next_state, done).
-        On the final step of an episode there is no future, so the
-        next-state value is 0, and epsilon is decayed once for the
-        finished episode.
-        """
         current_q = self.q_table.get((state, action), 0.0)
 
         if done:
