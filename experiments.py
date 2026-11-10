@@ -26,9 +26,7 @@ def train_q(arrival_prob, episodes, seed=1, gamma=0.90):
 
 ## Testing
 def test(agent, arrival_prob):
-    """Average score over TEST_EPISODES games on a fixed-seed environment.
-    Uses run_episode; learning is switched off beforehand (see train_q), and the
-    baseline agents' update() does nothing, so no agent changes during testing."""
+    """Average score over TEST_EPISODES games on a fixed-seed environment."""
     env = Elevator(seed=TEST_SEED, arrival_prob=arrival_prob)  # same seed = fair test
     totals = [run_episode(env, agent) for _ in range(TEST_EPISODES)]
     return sum(totals) / len(totals)
